@@ -1,13 +1,16 @@
 import atexit
 from datetime import datetime
-from os import kill
+import os
 import subprocess
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 from flask import request
 
-LOCAL_TESTING = True  # do not use any of the RPi library functionality
+if os.environ.get('ENV', 'development') == 'rover':
+    LOCAL_TESTING = False  # do not use any of the RPi library functionality
+else:
+    LOCAL_TESTING = True
 
 if not LOCAL_TESTING:
     import RPi.GPIO as GPIO
@@ -17,8 +20,8 @@ sched.start()
 atexit.register(sched.shutdown)
 
 
-CONTROL_TIMEOUT = 5  # seconds
-CONTROL_CHECK_INTERVAL = 1  # seconds
+CONTROL_TIMEOUT = 0.2  # seconds
+CONTROL_CHECK_INTERVAL = 0.1  # seconds
 
 LEFT_PWM_PIN = 16
 LEFT_DIR_PIN = 13
@@ -98,10 +101,8 @@ last_control_set_time = datetime.timestamp(datetime.now())
 
 def _kill_motors_if_inactive():
     global last_control_set_time
-    print("Kill motors check.")
     now = datetime.timestamp(datetime.now())
     if last_control_set_time + CONTROL_TIMEOUT < now:
-        print("Motors killed.")
         set_motors(0, 0)
         last_control_set_time = now
 
@@ -124,6 +125,7 @@ def heartbeat():
 
 @app.route("/set_control")
 def set_control():
+    global last_control_set_time
     left = int(request.args.get("left", ""))
     right = int(request.args.get("right", ""))
     set_motors(left, right)
