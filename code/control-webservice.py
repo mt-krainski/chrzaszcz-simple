@@ -15,20 +15,12 @@ else:
 if not LOCAL_TESTING:
     import RPi.GPIO as GPIO
 
-sched = BackgroundScheduler()
-sched.start()
-atexit.register(sched.shutdown)
-
-
-CONTROL_TIMEOUT = 0.2  # seconds
-CONTROL_CHECK_INTERVAL = 0.1  # seconds
-
 LEFT_PWM_PIN = 16
 LEFT_DIR_PIN = 13
 RIGHT_PWM_PIN = 12
 RIGHT_DIR_PIN = 6
 
-PWM_FREQUENCY = 5000
+PWM_FREQUENCY = 5000  # arbitrary choice
 
 # Since the motors are connected in the same way to the drivers
 #   they'll rotate in the same direction on the same state of DIR.
@@ -37,6 +29,30 @@ PWM_FREQUENCY = 5000
 #   this, we simply use a -1 multiplier on one of the sides.
 LEFT_DIRECTION_MULTIPLIER = -1
 RIGHT_DIRECTION_MULTIPLIER = 1
+
+app = Flask(__name__)
+
+sched = BackgroundScheduler()
+sched.start()
+atexit.register(sched.shutdown)
+
+# This variable notes when was the last movement command received.
+#   Under normal circumstances, the webservice will receive a movement 
+#   command every ~100ms. If there's no command for CONTROL_TIMEOUT,
+#   the rover will be put to a halt
+last_control_set_timestamp = datetime.timestamp(datetime.now())
+CONTROL_TIMEOUT = 0.2  # seconds
+CONTROL_CHECK_INTERVAL = 0.1  # seconds
+
+def _kill_motors_if_inactive():
+    global last_control_set_timestamp
+    now = datetime.timestamp(datetime.now())
+    if last_control_set_timestamp + CONTROL_TIMEOUT < now:
+        set_motors(0, 0)
+        last_control_set_timestamp = now
+
+
+sched.add_job(_kill_motors_if_inactive, "interval", seconds=CONTROL_CHECK_INTERVAL)
 
 if not LOCAL_TESTING:
     # Use BCM because this notation is on the HAT.
@@ -95,23 +111,6 @@ def set_motors(left_power, right_power):
         LEFT_PWM.ChangeDutyCycle(abs(left_power))
 
 
-# variables that are accessible from anywhere
-last_control_set_time = datetime.timestamp(datetime.now())
-
-
-def _kill_motors_if_inactive():
-    global last_control_set_time
-    now = datetime.timestamp(datetime.now())
-    if last_control_set_time + CONTROL_TIMEOUT < now:
-        set_motors(0, 0)
-        last_control_set_time = now
-
-
-sched.add_job(_kill_motors_if_inactive, "interval", seconds=CONTROL_CHECK_INTERVAL)
-
-app = Flask(__name__)
-
-
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -125,9 +124,9 @@ def heartbeat():
 
 @app.route("/set_control")
 def set_control():
-    global last_control_set_time
+    global last_control_set_timestamp
     left = int(request.args.get("left", ""))
     right = int(request.args.get("right", ""))
     set_motors(left, right)
-    last_control_set_time = datetime.timestamp(datetime.now())
+    last_control_set_timestamp = datetime.timestamp(datetime.now())
     return ""
