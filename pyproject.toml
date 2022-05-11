@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "chrzaszcz-simple"
+version = "0.1.0"
+description = ""
+authors = ["Mateusz Krainski <mateusz@krainski.eu>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+Flask = "^2.1.2"
+readchar = "^3.0.5"
+APScheduler = "^3.9.1"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
