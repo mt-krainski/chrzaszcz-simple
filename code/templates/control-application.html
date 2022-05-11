@@ -1,0 +1,68 @@
+<html style="height: 100%;">
+    <head>
+        <script>
+            // 87 - w
+            // 83 - s
+            // 65 - a
+            // 68 - d
+            // 16 - shift
+            // 32 - space
+            var keys = new Set();
+            window.onfocus = function() { keys = new Set() }
+            console.log("Keys currently pressed: ")
+            window.addEventListener(
+                "keydown",
+                function(e){
+                    keys.add(e.keyCode);
+                    // console.log("Keys currently pressed: " + Array.from(keys.values()));
+                },
+                false
+            );
+
+            window.addEventListener(
+                "keyup",
+                function(e){
+                    keys.delete(e.keyCode);
+                    // console.log("Keys currently pressed: " + Array.from(keys.values()));
+                },
+                false
+            );
+
+            var intervalId = window.setInterval(function(){
+                console.log("Keys currently pressed: " + Array.from(keys.values()));
+                var currentLocation = window.location["origin"];
+                var basePower = 50
+                var left = 0
+                var right = 0
+                console.log("Keys currently pressed: " + Array.from(keys.values()));
+                if (keys.has(16)){  // shift
+                    basePower = 100;
+                }
+                if (keys.has(87)){  // w
+                    left += basePower;
+                    right += basePower;
+                }
+                if (keys.has(83)){  // s
+                    left -= basePower;
+                    right -= basePower;
+                }
+                if (keys.has(65)){  // a
+                    left -= basePower;
+                    right += basePower;
+                }
+                if (keys.has(68)){  // d
+                    left += basePower;
+                    right -= basePower;
+                }
+
+                var xmlHttp = new XMLHttpRequest();
+                requestUrl = currentLocation+"/set_control?left="+left+"&right="+right
+                xmlHttp.open( "GET", requestUrl, false ); // false for synchronous request
+                xmlHttp.send( null );
+              }, 50);
+        </script>
+    </head>
+    <body style="margin: 20px; background: #0e0e0e; height: 100%">
+        <img style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 25%);" src="http://10.42.0.252:8081/">
+    </body>
+</html>

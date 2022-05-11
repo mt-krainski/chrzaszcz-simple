@@ -4,7 +4,7 @@ import os
 import subprocess
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask
+from flask import Flask, render_template
 from flask import request
 
 if os.environ.get("ENV", "development") == "rover":
@@ -33,7 +33,6 @@ RIGHT_DIRECTION_MULTIPLIER = 1
 app = Flask(__name__)
 
 sched = BackgroundScheduler()
-sched.start()
 atexit.register(sched.shutdown)
 
 # This variable notes when was the last movement command received.
@@ -41,7 +40,7 @@ atexit.register(sched.shutdown)
 #   command every ~100ms. If there's no command for CONTROL_TIMEOUT,
 #   the rover will be put to a halt
 last_control_set_timestamp = datetime.timestamp(datetime.now())
-CONTROL_TIMEOUT = 0.2  # seconds
+CONTROL_TIMEOUT = 0.5  # seconds
 CONTROL_CHECK_INTERVAL = 0.1  # seconds
 
 
@@ -71,6 +70,11 @@ if not LOCAL_TESTING:
     RIGHT_PWM = GPIO.PWM(RIGHT_PWM_PIN, PWM_FREQUENCY)
     LEFT_PWM.start(0)
     RIGHT_PWM.start(0)
+
+    def cleanup_pins():
+        GPIO.cleanup()
+
+    atexit.register(cleanup_pins)
 
 
 def _set_dir_pin(power, dir_pin):
@@ -112,6 +116,10 @@ def set_motors(left_power, right_power):
         LEFT_PWM.ChangeDutyCycle(abs(left_power))
 
 
+# Start the scheduler for background tasks
+sched.start()
+
+
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -130,4 +138,9 @@ def set_control():
     right = int(request.args.get("right", ""))
     set_motors(left, right)
     last_control_set_timestamp = datetime.timestamp(datetime.now())
-    return ""
+    return {"status": "ok"}
+
+
+@app.route("/control")
+def control():
+    return render_template("control-application.html")
