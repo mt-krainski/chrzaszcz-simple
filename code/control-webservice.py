@@ -7,7 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 from flask import request
 
-if os.environ.get('ENV', 'development') == 'rover':
+if os.environ.get("ENV", "development") == "rover":
     LOCAL_TESTING = False  # do not use any of the RPi library functionality
 else:
     LOCAL_TESTING = True
@@ -37,12 +37,13 @@ sched.start()
 atexit.register(sched.shutdown)
 
 # This variable notes when was the last movement command received.
-#   Under normal circumstances, the webservice will receive a movement 
+#   Under normal circumstances, the webservice will receive a movement
 #   command every ~100ms. If there's no command for CONTROL_TIMEOUT,
 #   the rover will be put to a halt
 last_control_set_timestamp = datetime.timestamp(datetime.now())
 CONTROL_TIMEOUT = 0.2  # seconds
 CONTROL_CHECK_INTERVAL = 0.1  # seconds
+
 
 def _kill_motors_if_inactive():
     global last_control_set_timestamp
