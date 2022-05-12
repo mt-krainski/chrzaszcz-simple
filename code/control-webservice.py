@@ -7,6 +7,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, render_template
 from flask import request
 
+import maestro
+
 if os.environ.get("ENV", "development") == "rover":
     LOCAL_TESTING = False  # do not use any of the RPi library functionality
 else:
@@ -42,6 +44,14 @@ atexit.register(sched.shutdown)
 last_control_set_timestamp = datetime.timestamp(datetime.now())
 CONTROL_TIMEOUT = 0.5  # seconds
 CONTROL_CHECK_INTERVAL = 0.1  # seconds
+
+ARM_BASE_POSITION = [5500, 9000, 9000, 3000, 9000, 3000]
+ARM_CONTROL_MIN = 3000
+ARM_CONTROL_MAX = 9000
+
+arm_requested_position = ARM_BASE_POSITION.copy()
+if not LOCAL_TESTING:
+    arm_controller = maestro.Controller()
 
 
 def _kill_motors_if_inactive():
@@ -116,13 +126,17 @@ def set_motors(left_power, right_power):
         LEFT_PWM.ChangeDutyCycle(abs(left_power))
 
 
+def set_arm():
+    """Set arm into position specified in global variable arm_requested_position."""
+    for joint, value in enumerate(arm_requested_position):
+        print(f"joint: {joint}, value: {value}")
+    if LOCAL_TESTING:
+        return
+    arm_controller.setTarget(joint, value)
+
+
 # Start the scheduler for background tasks
 sched.start()
-
-
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
 
 
 @app.route("/heartbeat")
@@ -131,13 +145,32 @@ def heartbeat():
     return {"heartbeat": now % 2}
 
 
-@app.route("/set_control")
-def set_control():
+@app.route("/control_rover_movement")
+def control_rover_movement():
     global last_control_set_timestamp
-    left = int(request.args.get("left", ""))
-    right = int(request.args.get("right", ""))
+    left = int(request.args.get("left", "0"))
+    right = int(request.args.get("right", "0"))
     set_motors(left, right)
     last_control_set_timestamp = datetime.timestamp(datetime.now())
+    return {"status": "ok"}
+
+
+@app.route("/control_arm_movement")
+def control_arm_movement():
+    global arm_requested_position
+    joint_movement_requests = [
+        int(request.args.get(f"joint_{i}", "0")) for i in range(6)
+    ]
+    for i in range(len(arm_requested_position)):
+        arm_requested_position[i] += joint_movement_requests[i]
+        if arm_requested_position[i] < ARM_CONTROL_MIN:
+            arm_requested_position[i] = ARM_CONTROL_MIN
+        if arm_requested_position[i] > ARM_CONTROL_MAX:
+            arm_requested_position[i] = ARM_CONTROL_MAX
+    print(arm_requested_position)
+    if LOCAL_TESTING:
+        print(f"Moving arm to position {arm_requested_position}")
+    set_arm()
     return {"status": "ok"}
 
 

@@ -1,12 +1,22 @@
 <html style="height: 100%;">
     <head>
         <script>
+            // Driving the rover:
             // 87 - w
             // 83 - s
             // 65 - a
             // 68 - d
             // 16 - shift
             // 32 - space
+            // Rover arm:
+            // + and - denote whether the key press should correspond to a positive
+            //   or negative change to the steering signal.
+            // Joint 0 (base): (+) v - 86, (-) b - 66
+            // Joint 1: (-) g - 71, (+) y - 89
+            // Joint 2: (+) h - 72, (-) u - 85
+            // Joint 3: (-) j - 74, (+) i - 73
+            // Joint 4: (+) k - 75, (-) o - 79
+            // Joint 5 (grip): (-) l - 76, (+) p - 80
             var keys = new Set();
             window.onfocus = function() { keys = new Set() }
             console.log("Keys currently pressed: ")
@@ -14,7 +24,6 @@
                 "keydown",
                 function(e){
                     keys.add(e.keyCode);
-                    // console.log("Keys currently pressed: " + Array.from(keys.values()));
                 },
                 false
             );
@@ -23,18 +32,15 @@
                 "keyup",
                 function(e){
                     keys.delete(e.keyCode);
-                    // console.log("Keys currently pressed: " + Array.from(keys.values()));
                 },
                 false
             );
 
-            var intervalId = window.setInterval(function(){
-                console.log("Keys currently pressed: " + Array.from(keys.values()));
-                var currentLocation = window.location["origin"];
+            function control_rover_movement(){
+                var baseUrl = window.location["origin"];
                 var basePower = 50
                 var left = 0
                 var right = 0
-                console.log("Keys currently pressed: " + Array.from(keys.values()));
                 if (keys.has(16)){  // shift
                     basePower = 100;
                 }
@@ -55,10 +61,64 @@
                     right -= basePower;
                 }
 
+                // Send the request to drive the rover
                 var xmlHttp = new XMLHttpRequest();
-                requestUrl = currentLocation+"/set_control?left="+left+"&right="+right
+                requestUrl = baseUrl+"/control_rover_movement?left="+left+"&right="+right
                 xmlHttp.open( "GET", requestUrl, false ); // false for synchronous request
                 xmlHttp.send( null );
+            };
+
+            function control_arm_movement(){
+                var baseUrl = window.location["origin"];
+
+                var joint_movement_command = [0, 0, 0, 0, 0, 0];
+                const movement_increment = 100
+
+                function check_key(key, joint_index, increment){
+                    if (keys.has(key)){
+                        joint_movement_command[joint_index] += increment;
+                    }
+                }
+
+                // Base, v-b
+                check_key(86, 0, movement_increment);
+                check_key(66, 0, -movement_increment);
+                // Joint 1, g-y
+                check_key(71, 1, -movement_increment);
+                check_key(89, 1, movement_increment);
+                // Joint 2, h-u
+                check_key(72, 2, movement_increment);
+                check_key(85, 2, -movement_increment);
+                // Joint 3, j-i
+                check_key(74, 3, -movement_increment);
+                check_key(73, 3, movement_increment);
+                // Joint 4, k-o
+                check_key(75, 4, movement_increment);
+                check_key(79, 4, -movement_increment);
+                // Base, v-b
+                check_key(76, 5, -movement_increment);
+                check_key(80, 5, movement_increment);
+                
+                console.log(joint_movement_command);
+
+                // Send the request to drive the arm
+                var xmlHttp = new XMLHttpRequest();
+                requestUrl = baseUrl + 
+                             "/control_arm_movement?" + 
+                             "joint_0=" + joint_movement_command[0] + "&" +
+                             "joint_1=" + joint_movement_command[1] + "&" +
+                             "joint_2=" + joint_movement_command[2] + "&" +
+                             "joint_3=" + joint_movement_command[3] + "&" +
+                             "joint_4=" + joint_movement_command[4] + "&" +
+                             "joint_5=" + joint_movement_command[5] + "&";
+                xmlHttp.open( "GET", requestUrl, false ); // false for synchronous request
+                xmlHttp.send( null );
+            };
+
+            var intervalId = window.setInterval(function(){
+                console.log("Keys currently pressed: " + Array.from(keys.values()));
+                control_rover_movement();
+                control_arm_movement();
               }, 50);
         </script>
     </head>
