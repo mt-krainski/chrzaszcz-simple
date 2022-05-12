@@ -130,9 +130,8 @@ def set_arm():
     """Set arm into position specified in global variable arm_requested_position."""
     for joint, value in enumerate(arm_requested_position):
         print(f"joint: {joint}, value: {value}")
-    if LOCAL_TESTING:
-        return
-    arm_controller.setTarget(joint, value)
+        if not LOCAL_TESTING:
+            arm_controller.setTarget(joint, value)
 
 
 # Start the scheduler for background tasks
@@ -172,6 +171,13 @@ def control_arm_movement():
         print(f"Moving arm to position {arm_requested_position}")
     set_arm()
     return {"status": "ok"}
+
+
+@app.route("/reset_arm")
+def reset_arm():
+    global arm_requested_position
+    arm_requested_position = ARM_BASE_POSITION.copy()
+    set_arm()
 
 
 @app.route("/control")

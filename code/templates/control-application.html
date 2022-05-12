@@ -43,23 +43,23 @@
                 var right = 0
                 if (keys.has(16)){  // shift
                     basePower = 100;
-                }
+                };
                 if (keys.has(87)){  // w
                     left += basePower;
                     right += basePower;
-                }
+                };
                 if (keys.has(83)){  // s
                     left -= basePower;
                     right -= basePower;
-                }
+                };
                 if (keys.has(65)){  // a
                     left -= basePower;
                     right += basePower;
-                }
+                };
                 if (keys.has(68)){  // d
                     left += basePower;
                     right -= basePower;
-                }
+                };
 
                 // Send the request to drive the rover
                 var xmlHttp = new XMLHttpRequest();
@@ -77,8 +77,8 @@
                 function check_key(key, joint_index, increment){
                     if (keys.has(key)){
                         joint_movement_command[joint_index] += increment;
-                    }
-                }
+                    };
+                };
 
                 // Base, v-b
                 check_key(86, 0, movement_increment);
@@ -115,13 +115,24 @@
                 xmlHttp.send( null );
             };
 
+            function reset_arm(){
+                if (keys.has(32)){  // space
+                    var xmlHttp = new XMLHttpRequest();
+                    requestUrl = baseUrl + "/reset_arm"
+                    xmlHttp.open( "GET", requestUrl, false ); // false for synchronous request
+                    xmlHttp.send( null );
+                };
+            };
+
             var intervalId = window.setInterval(function(){
                 console.log("Keys currently pressed: " + Array.from(keys.values()));
                 control_rover_movement();
                 control_arm_movement();
+                reset_arm();
               }, 50);
         </script>
     </head>
+    <!-- Show the image from the camera -->
     <body style="margin: 20px; background: #0e0e0e; height: 100%">
         <img style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 25%);" src="http://10.42.0.252:8081/">
     </body>
