@@ -17,9 +17,12 @@
             // Joint 3: (-) j - 74, (+) i - 73
             // Joint 4: (+) k - 75, (-) o - 79
             // Joint 5 (grip): (-) l - 76, (+) p - 80
+
+            // This application is using synchronous requests on purpose.
+            //   It's easier to maintain sane control this way.
+
             var keys = new Set();
             window.onfocus = function() { keys = new Set() }
-            console.log("Keys currently pressed: ")
             window.addEventListener(
                 "keydown",
                 function(e){
@@ -98,8 +101,6 @@
                 // Base, v-b
                 check_key(76, 5, -movement_increment);
                 check_key(80, 5, movement_increment);
-                
-                console.log(joint_movement_command);
 
                 // Send the request to drive the arm
                 var xmlHttp = new XMLHttpRequest();
@@ -125,16 +126,30 @@
                 };
             };
 
+            function shutdownRover(){
+                var baseUrl = window.location["origin"];
+                var xmlHttp = new XMLHttpRequest();
+                requestUrl = baseUrl + "/shutdown"
+                xmlHttp.open( "GET", requestUrl, true ); // false for synchronous request
+                xmlHttp.send( null );
+            }
+
             var intervalId = window.setInterval(function(){
-                console.log("Keys currently pressed: " + Array.from(keys.values()));
                 control_rover_movement();
                 control_arm_movement();
                 reset_arm();
-              }, 50);
+              }, {{ interval }});
         </script>
     </head>
     <!-- Show the image from the camera -->
     <body style="margin: 20px; background: #0e0e0e; height: 100%">
         <img style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 25%);" src="http://10.42.0.252:8081/">
+        <input 
+          id="shutdownButton" 
+          type="button" 
+          value="Shutdown" 
+          onclick="shutdownRover();" 
+          style="float: right; margin: 10px;"
+        />
     </body>
 </html>

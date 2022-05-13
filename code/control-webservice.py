@@ -42,8 +42,15 @@ atexit.register(sched.shutdown)
 #   command every ~100ms. If there's no command for CONTROL_TIMEOUT,
 #   the rover will be put to a halt
 last_control_set_timestamp = datetime.timestamp(datetime.now())
-CONTROL_TIMEOUT = 0.5  # seconds
-CONTROL_CHECK_INTERVAL = 0.1  # seconds
+if LOCAL_TESTING:
+    CONTROL_TIMEOUT = 10  # seconds
+    CONTROL_CHECK_INTERVAL = 1  # seconds
+    CONTROL_LOOP_INTERVAL = 5000  # milliseconds
+else:
+    CONTROL_TIMEOUT = 0.5  # seconds
+    CONTROL_CHECK_INTERVAL = 0.1  # seconds
+    CONTROL_LOOP_INTERVAL = 50  # milliseconds
+
 
 ARM_BASE_POSITION = [5500, 9000, 9000, 3000, 9000, 3000]
 ARM_CONTROL_MIN = 3000
@@ -58,6 +65,7 @@ def _kill_motors_if_inactive():
     global last_control_set_timestamp
     now = datetime.timestamp(datetime.now())
     if last_control_set_timestamp + CONTROL_TIMEOUT < now:
+        print("Killing motors")
         set_motors(0, 0)
         last_control_set_timestamp = now
 
@@ -118,9 +126,11 @@ def set_motors(left_power, right_power):
     _set_dir_pin(right_power, RIGHT_DIR_PIN)
 
     if LOCAL_TESTING:
-        print("Would execute: ")
-        print(f"RIGHT_PWM.ChangeDutyCycle(abs({right_power}))")
-        print(f"LEFT_PWM.ChangeDutyCycle(abs({left_power}))")
+        print(
+            "Would execute: "
+            f"RIGHT_PWM.ChangeDutyCycle(abs({right_power})), "
+            f"LEFT_PWM.ChangeDutyCycle(abs({left_power}))"
+        )
     else:
         RIGHT_PWM.ChangeDutyCycle(abs(right_power))
         LEFT_PWM.ChangeDutyCycle(abs(left_power))
@@ -129,7 +139,6 @@ def set_motors(left_power, right_power):
 def set_arm():
     """Set arm into position specified in global variable arm_requested_position."""
     for joint, value in enumerate(arm_requested_position):
-        print(f"joint: {joint}, value: {value}")
         if not LOCAL_TESTING:
             arm_controller.setTarget(joint, value)
 
@@ -140,7 +149,7 @@ sched.start()
 
 @app.route("/")
 def control():
-    return render_template("control-application.html")
+    return render_template("control-application.html", interval=CONTROL_LOOP_INTERVAL)
 
 
 @app.route("/heartbeat")
@@ -171,7 +180,6 @@ def control_arm_movement():
             arm_requested_position[i] = ARM_CONTROL_MIN
         if arm_requested_position[i] > ARM_CONTROL_MAX:
             arm_requested_position[i] = ARM_CONTROL_MAX
-    print(arm_requested_position)
     if LOCAL_TESTING:
         print(f"Moving arm to position {arm_requested_position}")
     set_arm()
@@ -183,3 +191,12 @@ def reset_arm():
     global arm_requested_position
     arm_requested_position = ARM_BASE_POSITION.copy()
     set_arm()
+
+
+@app.route("/shutdown")
+def shutdown():
+    if LOCAL_TESTING:
+        print("Would shutdown.")
+    else:
+        subprocess.call(["sudo", "shutdown", "-h", "now"])
+    return {"status": "ok"}
