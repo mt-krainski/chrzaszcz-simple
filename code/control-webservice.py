@@ -65,7 +65,6 @@ def _kill_motors_if_inactive():
     global last_control_set_timestamp
     now = datetime.timestamp(datetime.now())
     if last_control_set_timestamp + CONTROL_TIMEOUT < now:
-        print("Killing motors")
         set_motors(0, 0)
         last_control_set_timestamp = now
 
