@@ -116,6 +116,7 @@
             };
 
             function reset_arm(){
+                var baseUrl = window.location["origin"];
                 if (keys.has(32)){  // space
                     var xmlHttp = new XMLHttpRequest();
                     requestUrl = baseUrl + "/reset_arm"

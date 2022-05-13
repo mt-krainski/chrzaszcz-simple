@@ -138,6 +138,11 @@ def set_arm():
 sched.start()
 
 
+@app.route("/")
+def control():
+    return render_template("control-application.html")
+
+
 @app.route("/heartbeat")
 def heartbeat():
     now = datetime.now().second
@@ -178,8 +183,3 @@ def reset_arm():
     global arm_requested_position
     arm_requested_position = ARM_BASE_POSITION.copy()
     set_arm()
-
-
-@app.route("/control")
-def control():
-    return render_template("control-application.html")
