@@ -37,7 +37,6 @@ The web application is listening for key-down and key-up events and transforms t
 
 The application is sending the movement commands periodically for safety reasons. You can imagine that if the control would be that you just send a start and stop signal (and not repeated keep-moving signal), the rover could lose connection and would just keep moving. With the repeated movement commands, if the connection is lost, the rover will stop receiving movement commands and stop after a predefined timeout. Which is much better than the rover just driving off into the sunset.
 
-
 ### Logic of the control webservice
 The webservice exposes a few endpoints which, when called properly, can move the rover. 
 
@@ -47,6 +46,13 @@ The webservice exposes a few endpoints which, when called properly, can move the
 -  `/control_arm_movement?joint_0=0&joint_1=0&joint_2=0&joint_3=0&joint_4=0&joint_5=0` - controls the rover arm. Each of the joints is controlled individually, incrementally. `100` is a reasonable value to send here. E.g. sending `/control_arm_movement?joint_0=100` twice, will result in the arm base being moved by "200". I didn't have the time to investigate the units so these are what the `maestro` driver accepts. Total range of values sent to the arm, which result in correct arm movement are 3,000 - 9,000.
 - `/reset_arm` - will move the arm to the base position.
 - `/shutdown` - will shutdown the rover.
+
+### Cleanup
+If you wish to develop for this application, please adhere to the `black` code style. If you installed all the dependencies, you can set up githooks for this repository by running in the repository root:
+```bash
+python -m python_githooks
+```
+Now, on commit, a `cleanup.sh` script will be executed, which will automatically `black` all the modified Python files. You can also just apply `black` manually with `black .`.
 
 ## Why "Simple"?
 
