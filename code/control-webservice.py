@@ -62,6 +62,13 @@ if not LOCAL_TESTING:
 
 
 def _kill_motors_if_inactive():
+    """Kill motors if there was no control signal for the timeout duration.
+
+    This function is triggered periodically. It checks when was the last control
+    signal sent to the rover. If a `CONTROL_TIMEOUT` duration passes, it will stop the
+    rover. The intent here is to prevent the rover from driving away if communication is
+    lost.
+    """
     global last_control_set_timestamp
     now = datetime.timestamp(datetime.now())
     if last_control_set_timestamp + CONTROL_TIMEOUT < now:
@@ -95,6 +102,13 @@ if not LOCAL_TESTING:
 
 
 def _set_dir_pin(power, dir_pin):
+    """Correctly set the direction pin based on `power`.
+
+    Args:
+        power (int): -100 to 100 value. If the value is negative
+          this will set the direction pin, otherwise it will clear it.
+        dir_pin (int): ID of the direction pin to set or clear.
+    """
     if power < 0:
         if LOCAL_TESTING:
             print(f"Would execute: GPIO.output({dir_pin}, GPIO.HIGH)")
@@ -136,7 +150,13 @@ def set_motors(left_power, right_power):
 
 
 def set_arm():
-    """Set arm into position specified in global variable arm_requested_position."""
+    """Set arm into position specified in global variable arm_requested_position.
+
+    This is using a global variable arm_requested_position. It could be implemented
+    equally well without using a global variable here, but I decided to go with this
+    solution.
+    """
+    global arm_requested_position
     for joint, value in enumerate(arm_requested_position):
         if not LOCAL_TESTING:
             arm_controller.setTarget(joint, value)
@@ -159,6 +179,10 @@ def heartbeat():
 
 @app.route("/control_rover_movement")
 def control_rover_movement():
+    """Endopoint used to control the rover movement.
+
+    It requires `left` and `right` url query parameters.
+    """
     global last_control_set_timestamp
     left = int(request.args.get("left", "0"))
     right = int(request.args.get("right", "0"))
@@ -169,6 +193,16 @@ def control_rover_movement():
 
 @app.route("/control_arm_movement")
 def control_arm_movement():
+    """Endpoint used to control the arm movement.
+
+    It receives the movement command in `joint_{0..5}` url query parameters.
+    The values are requested offsets compared to the current position expressed in
+    the same unit that's used by the maestro package.
+
+    It's using a global parameter to store the arm position as it's only incrementing
+    or decrementing it. An alternative here would be to read the current position from
+    the maestro before issuing the move command.
+    """
     global arm_requested_position
     joint_movement_requests = [
         int(request.args.get(f"joint_{i}", "0")) for i in range(6)
@@ -187,6 +221,7 @@ def control_arm_movement():
 
 @app.route("/reset_arm")
 def reset_arm():
+    """Reset the arm to the base position.ś"""
     global arm_requested_position
     arm_requested_position = ARM_BASE_POSITION.copy()
     set_arm()
@@ -194,6 +229,7 @@ def reset_arm():
 
 @app.route("/shutdown")
 def shutdown():
+    """Shutdown the rover."""
     if LOCAL_TESTING:
         print("Would shutdown.")
     else:

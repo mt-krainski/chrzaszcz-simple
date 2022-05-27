@@ -26,6 +26,7 @@
             window.addEventListener(
                 "keydown",
                 function(e){
+                    // Add the keycode to the list of currently pressed keys.
                     keys.add(e.keyCode);
                 },
                 false
@@ -34,12 +35,14 @@
             window.addEventListener(
                 "keyup",
                 function(e){
+                    // Remove the keycode from the list of currently pressed keys.
                     keys.delete(e.keyCode);
                 },
                 false
             );
 
             function control_rover_movement(){
+                // Read the pressed keys, and issue the movement command.
                 var baseUrl = window.location["origin"];
                 var basePower = 50
                 var left = 0
@@ -72,6 +75,7 @@
             };
 
             function control_arm_movement(){
+                // Read the pressed keys, and issue the arm movement command.
                 var baseUrl = window.location["origin"];
 
                 var joint_movement_command = [0, 0, 0, 0, 0, 0];
