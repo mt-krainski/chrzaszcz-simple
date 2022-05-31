@@ -221,7 +221,7 @@ def control_arm_movement():
 
 @app.route("/reset_arm")
 def reset_arm():
-    """Reset the arm to the base position.ś"""
+    """Reset the arm to the base position."""
     global arm_requested_position
     arm_requested_position = ARM_BASE_POSITION.copy()
     set_arm()
